@@ -17,3 +17,18 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class ProductVariantResponse(BaseModel):
+    id: int
+    size_name: str
+    stock: int
+    product_name: str
+    reference2: Optional[str]
+    price: float
+    color: str
+    created_at: datetime.datetime
+    updated_at: Optional[datetime.datetime]
+
+class CategoryResponse(BaseModel):
+    id: int
+    name: str

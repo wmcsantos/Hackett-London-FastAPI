@@ -5,6 +5,9 @@ from database import get_db
 from models import Users
 from schemas import UserResponse
 from auth_routes import auth_router
+from product_routes import product_router
+from category_routes import category_router
+from subcategory_routes import subcategory_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -26,3 +29,6 @@ def get_users(db: Session = Depends(get_db)):
     return db.query(Users).all()
 
 app.include_router(auth_router)
+app.include_router(product_router)
+app.include_router(category_router)
+app.include_router(subcategory_router)
