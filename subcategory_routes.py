@@ -1,9 +1,9 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
-from database import get_db
-from models import Categories
-from schemas import CategoryResponse
+from .database import get_db
+from .models import Categories
+from .schemas import CategoryResponse
 
 subcategory_router = APIRouter(
     prefix = '/subcategories',

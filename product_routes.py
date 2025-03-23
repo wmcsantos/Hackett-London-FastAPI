@@ -1,9 +1,9 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
-from database import get_db
-from models import ProductVariants, Sizes, ColorProducts, Colors, Products
-from schemas import ProductVariantResponse
+from .database import get_db
+from .models import ProductVariants, Sizes, ColorProducts, Colors, Products
+from .schemas import ProductVariantResponse
 
 product_router = APIRouter(
     prefix = '/product',
