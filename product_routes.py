@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from .database import get_db
 from .models import ProductVariants, Sizes, ColorProducts, Colors, Products, ProductImages, Categories, t_category_products
-from .schemas import ProductVariantResponse, ProductsByCategoryResponse, ProductDetailResponse, ProductImageResponse, ProductColorResponse
+from .schemas import ProductVariantResponse, ProductsByCategoryResponse, ProductDetailResponse, ProductImageResponse, ProductColorResponse, ProductSizeResponse
 
 product_router = APIRouter(
     prefix = '/products',
@@ -127,7 +127,7 @@ def get_product_images(color_code: str, product_id: int, db: Session = Depends(g
     return product_images
 
 @product_router.get("/product-colors", response_model=list[ProductColorResponse])
-def get_product_images(product_id: int, db: Session = Depends(get_db)):
+def get_product_colors(product_id: int, db: Session = Depends(get_db)):
     product_colors = (
         db.query(
             Colors.name,
@@ -144,3 +144,24 @@ def get_product_images(product_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No product colors found")
     
     return product_colors
+
+@product_router.get("/product-sizes", response_model=list[ProductSizeResponse])
+def get_product_sizes(color_code: str, product_id: int, db: Session = Depends(get_db)):
+    product_sizes = (
+        db.query(
+            ProductVariants.size_id,
+            Sizes.name,
+            ProductVariants.stock
+        )
+        .join(Sizes, Sizes.id == ProductVariants.size_id)
+        .join(ColorProducts, ProductVariants.color_products_id == ColorProducts.id)
+        .join(Colors, ColorProducts.color_id == Colors.id)
+        .filter(Colors.code == color_code, ColorProducts.product_id == product_id)
+        .order_by(ProductVariants.size_id.asc())
+        .all()
+    )
+
+    if not product_sizes:
+        raise HTTPException(status_code=404, detail="No product sizes found")
+    
+    return product_sizes

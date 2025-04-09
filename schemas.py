@@ -65,3 +65,8 @@ class ProductColorResponse(BaseModel):
     code: str
     image_url: str
     color_id: int
+
+class ProductSizeResponse(BaseModel):
+    size_id: int
+    name:str
+    stock: int
