@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 import datetime
 from typing import Optional
 
@@ -70,3 +70,10 @@ class ProductSizeResponse(BaseModel):
     size_id: int
     name:str
     stock: int
+
+class UpdateUserRequest(BaseModel):
+    title: Optional[str]
+    first_name: Optional[str]
+    last_name: Optional[str]
+    gender: Optional[str]
+    email: Optional[EmailStr]
