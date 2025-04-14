@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 import datetime
 from typing import Optional
 
@@ -77,3 +77,8 @@ class UpdateUserRequest(BaseModel):
     last_name: Optional[str]
     gender: Optional[str]
     email: Optional[EmailStr]
+
+class UpdateUserPasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=6, max_length=100)
+    confirm_new_password: str = Field(..., min_length=6, max_length=100)
