@@ -1,6 +1,7 @@
 from fastapi import Depends, APIRouter, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime, timezone
 from .database import get_db
 from .models import Carts, Users, CartItems
@@ -38,6 +39,15 @@ def get_cart_items_from_cart(
     )
 
     return cart_items
+
+@cart_router.get("/cart/{cart_id}/cart-items/count")
+def count_cart_items(
+    cart_id: int,
+    db: Session = Depends(get_db)
+):
+    total_cart_items = db.query(func.sum(CartItems.quantity)).filter(CartItems.cart_id == cart_id).scalar()
+    
+    return {"total_cart_items": total_cart_items or 0}
 
 @cart_router.post("/cart")
 def create_cart(
