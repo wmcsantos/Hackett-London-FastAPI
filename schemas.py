@@ -82,3 +82,26 @@ class UpdateUserPasswordRequest(BaseModel):
     current_password: str
     new_password: str = Field(..., min_length=6, max_length=100)
     confirm_new_password: str = Field(..., min_length=6, max_length=100)
+
+class OrderResponse(BaseModel):
+    id: int
+    order_status: str
+    order_date: datetime.datetime
+    total_amount: float
+
+class CartResponse(BaseModel):
+    id: int
+    user_id: int
+    cart_status: str
+    session_id: Optional[str]
+    created_at: datetime.datetime
+    updated_at: Optional[datetime.datetime]
+
+class CartItemsResponse(BaseModel):
+    id: int
+    cart_id: int
+    product_variant_id: int
+    quantity: int
+    price: float
+    created_at: datetime.datetime
+    updated_at: Optional[datetime.datetime]

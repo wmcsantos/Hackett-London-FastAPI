@@ -6,6 +6,8 @@ from .user_routes import user_router
 from .product_routes import product_router
 from .category_routes import category_router
 from .subcategory_routes import subcategory_router
+from .order_routes import order_router
+from .cart_routes import cart_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -31,3 +33,5 @@ app.include_router(user_router)
 app.include_router(product_router)
 app.include_router(category_router)
 app.include_router(subcategory_router)
+app.include_router(order_router)
+app.include_router(cart_router)
