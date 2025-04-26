@@ -42,6 +42,40 @@ def get_product_variants(
     # Convert query results into dictionaries
     return variants
 
+@product_router.get("/variants/variant", response_model=ProductVariantResponse)
+def get_product_variant(
+    product_id: int,
+    size_id: int,
+    color_id: int,
+    db: Session = Depends(get_db)
+):
+    variant = (
+        db.query(
+            ProductVariants.id,
+            ProductVariants.created_at,
+            ProductVariants.reference2,
+            ProductVariants.stock,
+            ProductVariants.product_id,
+            ProductVariants.price,
+            ProductVariants.color_products_id,
+            ProductVariants.updated_at,
+            Sizes.name.label("size_name"),
+            Products.name.label("product_name"),
+            Colors.name.label("color")
+        )
+        .join(Sizes, ProductVariants.size_id == Sizes.id)
+        .join(ColorProducts, ProductVariants.color_products_id == ColorProducts.id)
+        .join(Products, ProductVariants.product_id == Products.id)
+        .join(Colors, ColorProducts.color_id == Colors.id)
+        .filter(Products.id == product_id, Sizes.id == size_id, Colors.id == color_id)
+        .first()
+    )
+
+    if not variant:
+        raise HTTPException(status_code=404, detail='Product variant does not exist')
+
+    return variant
+
 @product_router.get("/category/{id}", response_model=list[ProductsByCategoryResponse])
 def get_products_by_category(id: int, db: Session = Depends(get_db)):
     products = (
