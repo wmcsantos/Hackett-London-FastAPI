@@ -105,3 +105,8 @@ class CartItemsResponse(BaseModel):
     price: float
     created_at: datetime.datetime
     updated_at: Optional[datetime.datetime]
+
+class AddItemToCartRequest(BaseModel):
+    product_variant_id: int
+    quantity: int
+    price: float

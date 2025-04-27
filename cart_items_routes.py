@@ -5,7 +5,7 @@ from sqlalchemy import func
 from datetime import datetime, timezone
 from .database import get_db
 from .models import Carts, Users, CartItems
-from .schemas import CartResponse, CartItemsResponse
+from .schemas import CartResponse, CartItemsResponse, AddItemToCartRequest
 from .auth_routes import get_current_user
 
 cart_item_router = APIRouter(
@@ -13,12 +13,10 @@ cart_item_router = APIRouter(
     tags = ['cart-items']
 )
 
-@cart_item_router.post("/", response_model=CartItemsResponse)
+@cart_item_router.post("/", response_model=CartItemsResponse, status_code=status.HTTP_201_CREATED)
 def add_item_to_cart(
     cart_id: int,
-    product_variant_id: int,
-    quantity: int,
-    price: float,
+    item: AddItemToCartRequest,
     db: Session = Depends(get_db),
     current_user: Users = Depends(get_current_user)
 ):
@@ -28,14 +26,14 @@ def add_item_to_cart(
         raise HTTPException(status_code=404, detail='Cart not found for this user')
     
     cart_item = CartItems(
-        cart_id,
-        product_variant_id,
-        quantity,
-        price,
-        created_at = datetime.now(timezone.utc)
+        cart_id=cart_id,
+        product_variant_id=item.product_variant_id,
+        quantity=item.quantity,
+        price=item.price
     )
 
     db.add(cart_item)
     db.commit()
+    db.refresh(cart_item)
 
-    return HTTPException(status_code=201, detail='New item added to the cart')
+    return cart_item

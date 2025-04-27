@@ -5,7 +5,7 @@ from sqlalchemy import func
 from datetime import datetime, timezone
 from .database import get_db
 from .models import Carts, Users, CartItems
-from .schemas import CartResponse, CartItemsResponse
+from .schemas import CartResponse, CartItemsResponse, AddItemToCartRequest
 from .auth_routes import get_current_user
 from .cart_items_routes import add_item_to_cart
 
@@ -20,6 +20,9 @@ def get_user_active_cart(
     current_user: Users = Depends(get_current_user)
 ):
     user_active_cart = db.query(Carts).filter(Carts.user_id == current_user.id, Carts.cart_status == 'active').first()
+
+    if not user_active_cart:
+        raise HTTPException(status_code=404, detail='User does not have an active cart')
 
     return user_active_cart
 
@@ -57,7 +60,7 @@ def count_cart_items(
     
     return {"total_cart_items": total_cart_items or 0}
 
-@cart_router.post("/cart")
+@cart_router.post("/cart", response_model=CartResponse, status_code=status.HTTP_201_CREATED)
 def create_cart(
     db: Session = Depends(get_db),
     current_user: Users = Depends(get_current_user)
@@ -65,7 +68,7 @@ def create_cart(
     existing_cart = db.query(Carts).filter(Carts.user_id == current_user.id, Carts.cart_status == 'active').first()
 
     if existing_cart:
-        return HTTPException(status_code=200, detail='An existing active cart for the logged in user already exists!')
+        return existing_cart
     
     new_cart = Carts(
         user_id = current_user.id,
@@ -74,8 +77,9 @@ def create_cart(
 
     db.add(new_cart)
     db.commit()
+    db.refresh(new_cart)
 
-    return HTTPException(status_code=201, detail='Active cart created for the logged in user')
+    return new_cart
 
 @cart_router.put("/cart/{cart_id}/cart-status", response_model=CartResponse)
 def update_cart_status(
@@ -104,9 +108,7 @@ def update_cart_status(
 
 @cart_router.post("/cart/{cart_id}/add-cart-item")
 def add_to_cart(
-    product_variant_id: int,
-    quantity: int,
-    price: float,
+    item: AddItemToCartRequest,
     db: Session = Depends(get_db),
     current_user: Users = Depends(get_current_user)
 ):   
@@ -122,12 +124,12 @@ def add_to_cart(
     cart_items = get_cart_items_from_cart(user_cart.id, db, current_user)
 
     # Check if product already exists in the cart
-    for item in cart_items:
-        if item.product_variant_id == product_variant_id:
-            item.quantity += quantity
+    for  cart_item in cart_items:
+        if cart_item.product_variant_id == item.product_variant_id:
+            cart_item.quantity += item.quantity
             db.commit()
             return {"message": "Item quantity updated in cart"}
     
     # if the product is not found in the cart, add the new cart item
-    add_item_to_cart(user_cart.id, product_variant_id, quantity, price, db, current_user)
+    add_item_to_cart(cart_id=user_cart.id, item=item, db=db, current_user=current_user)
     return {"message": "Item added to cart"}
