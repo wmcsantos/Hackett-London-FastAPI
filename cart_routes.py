@@ -45,6 +45,25 @@ def get_cart_items_from_cart(
 
     return cart_items
 
+@cart_router.delete("/cart/{cart_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_cart(
+    cart_id: int,
+    db: Session = Depends(get_db),
+    current_user: Users = Depends(get_current_user)
+):
+    cart = db.query(Carts).filter(Carts.id == cart_id, Carts.user_id == current_user.id).first()
+
+    if not cart:
+        raise HTTPException(status_code=404, detail='Cart not found for this user')
+    
+    # First delete cart items
+    db.query(CartItems).filter(CartItems.cart_id == cart_id).delete()
+    
+    db.delete(cart)
+    db.commit()
+
+    return 
+
 @cart_router.get("/cart/{cart_id}/cart-items/count")
 def count_cart_items(
     cart_id: int,
