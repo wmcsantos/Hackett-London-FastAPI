@@ -1,5 +1,5 @@
 from fastapi import Depends, APIRouter, HTTPException, status
-from typing import List
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone
@@ -14,7 +14,7 @@ cart_router = APIRouter(
     tags = ['carts']
 )
 
-@cart_router.get("/cart", response_model=CartResponse)
+@cart_router.get("/cart", response_model=Optional[CartResponse])
 def get_user_active_cart(
     db: Session = Depends(get_db),
     current_user: Users = Depends(get_current_user)
@@ -22,7 +22,8 @@ def get_user_active_cart(
     user_active_cart = db.query(Carts).filter(Carts.user_id == current_user.id, Carts.cart_status == 'active').first()
 
     if not user_active_cart:
-        raise HTTPException(status_code=404, detail='User does not have an active cart')
+        return None
+        # raise HTTPException(status_code=404, detail='User does not have an active cart')
 
     return user_active_cart
 
@@ -95,10 +96,11 @@ def create_cart(
     )
 
     db.add(new_cart)
-    db.commit()
-    db.refresh(new_cart)
+    db.flush()
 
-    return new_cart
+    db.commit()
+
+    return db.query(Carts).get(new_cart.id)
 
 @cart_router.put("/cart/{cart_id}/cart-status", response_model=CartResponse)
 def update_cart_status(
@@ -125,7 +127,7 @@ def update_cart_status(
 
     return cart_status_to_update
 
-@cart_router.post("/cart/{cart_id}/add-cart-item")
+@cart_router.post("/cart/add-cart-item")
 def add_to_cart(
     item: AddItemToCartRequest,
     db: Session = Depends(get_db),

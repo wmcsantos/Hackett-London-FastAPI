@@ -20,20 +20,32 @@ def add_item_to_cart(
     db: Session = Depends(get_db),
     current_user: Users = Depends(get_current_user)
 ):
-    cart = db.query(Carts).filter(Carts.id == cart_id, Carts.user_id == current_user.id).first()
-
-    if not cart:
-        raise HTTPException(status_code=404, detail='Cart not found for this user')
+    cart_item = db.query(CartItems).filter(CartItems.cart_id == cart_id, CartItems.product_variant_id == item.product_variant_id).first()
     
-    cart_item = CartItems(
-        cart_id=cart_id,
-        product_variant_id=item.product_variant_id,
-        quantity=item.quantity,
-        price=item.price
-    )
+    if cart_item:
+        # Update existing cart item if it already exists
+        cart_item.quantity += item.quantity
+        db.add(cart_item)  # Make sure cart_item is added to the session
+    else:
+        # Create a new cart item if it doesn't exist
+        new_cart_item = CartItems(
+            cart_id=cart_id,
+            product_variant_id=item.product_variant_id,
+            quantity=item.quantity,
+            price=item.price
+        )
+        db.add(new_cart_item)
+        cart_item = new_cart_item
 
-    db.add(cart_item)
-    db.commit()
-    db.refresh(cart_item)
+    try:
+        db.flush()  # Flush the session to ensure changes are written to the DB
+        db.refresh(cart_item)  # Refresh to get the latest state from the database
+    except Exception as e:
+        # Handle any errors during refresh
+        print(f"Error refreshing cart item: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Error refreshing cart item.")
+
+    db.commit()  # Commit the transaction after refreshing
 
     return cart_item
