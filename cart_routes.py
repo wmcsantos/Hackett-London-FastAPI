@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timezone
 from .database import get_db
-from .models import Carts, Users, CartItems
-from .schemas import CartResponse, CartItemsResponse, AddItemToCartRequest
+from .models import Carts, Users, CartItems, ProductVariants, Products, ProductImages, ColorProducts, Sizes, Colors
+from .schemas import CartResponse, ItemsInCartResponse, AddItemToCartRequest
 from .auth_routes import get_current_user
 from .cart_items_routes import add_item_to_cart
 
@@ -27,24 +27,45 @@ def get_user_active_cart(
 
     return user_active_cart
 
-@cart_router.get("/cart/{cart_id}/cart-items", response_model=List[CartItemsResponse])
+@cart_router.get("/cart/{cart_id}/cart-items", response_model=List[ItemsInCartResponse])
 def get_cart_items_from_cart(
     cart_id: int,
     db: Session = Depends(get_db),
     current_user: Users = Depends(get_current_user)
 ):
-    cart = db.query(Carts).filter(Carts.id == cart_id, Carts.user_id == current_user.id).first()
-
+    cart = (
+        db.query(Carts)
+        .filter(Carts.id == cart_id, Carts.user_id == current_user.id)
+        .first()
+    )
     if not cart:
         raise HTTPException(status_code=404, detail='Cart not found for this user')
     
     cart_items = (
-        db.query(CartItems)
-        .filter(CartItems.cart_id == cart_id)
+        db.query(CartItems, Products.name.label("product_name"), ProductImages.image_url, Colors.name.label("color"), Sizes.name.label("size"))
+        .join(ProductVariants, CartItems.product_variant_id == ProductVariants.id)
+        .join(Products, ProductVariants.product_id == Products.id)
+        .join(ProductImages, ProductVariants.color_products_id == ProductImages.color_products_id)
+        .join(ColorProducts, ProductVariants.color_products_id == ColorProducts.id)
+        .join(Sizes, ProductVariants.size_id == Sizes.id)
+        .join(Colors, ColorProducts.color_id == Colors.id)
+        .filter(CartItems.cart_id == cart_id, ProductImages.position == 1)
         .all()
     )
 
-    return cart_items
+    result = []
+    for cart_item, product_name, image_url, color, size in cart_items:
+        result.append({
+            "id": cart_item.id,
+            "product_name": product_name,
+            "image_url": image_url,
+            "color": color,
+            "size": size,
+            "quantity": cart_item.quantity,
+            "price": cart_item.price
+        })
+
+    return result
 
 @cart_router.delete("/cart/{cart_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_cart(

@@ -106,6 +106,15 @@ class CartItemsResponse(BaseModel):
     created_at: datetime.datetime
     updated_at: Optional[datetime.datetime]
 
+class ItemsInCartResponse(BaseModel):
+    id: int
+    product_name: str
+    image_url: str
+    color: str
+    size: str
+    quantity: int
+    price: float
+
 class AddItemToCartRequest(BaseModel):
     product_variant_id: int
     quantity: int
