@@ -57,6 +57,7 @@ def get_cart_items_from_cart(
     for cart_item, product_name, image_url, color, size in cart_items:
         result.append({
             "id": cart_item.id,
+            "product_variant_id": cart_item.product_variant_id,
             "product_name": product_name,
             "image_url": image_url,
             "color": color,
@@ -181,15 +182,20 @@ def add_to_cart(
         create_cart(db, current_user)
         user_cart = get_user_active_cart(db, current_user)
 
-    # Get all cart items for the cart
-    cart_items = get_cart_items_from_cart(user_cart.id, db, current_user)
-
     # Check if product already exists in the cart
-    for  cart_item in cart_items:
-        if cart_item.product_variant_id == item.product_variant_id:
-            cart_item.quantity += item.quantity
-            db.commit()
-            return {"message": "Item quantity updated in cart"}
+    existing_item = (
+        db.query(CartItems)
+        .filter(
+            CartItems.cart_id == user_cart.id,
+            CartItems.product_variant_id == item.product_variant_id
+        )
+        .first()
+    )
+
+    if existing_item:
+        existing_item.quantity += item.quantity
+        db.commit()
+        return {"message": "Item quantity updated in cart"}
     
     # if the product is not found in the cart, add the new cart item
     add_item_to_cart(cart_id=user_cart.id, item=item, db=db, current_user=current_user)

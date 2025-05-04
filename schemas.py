@@ -108,6 +108,7 @@ class CartItemsResponse(BaseModel):
 
 class ItemsInCartResponse(BaseModel):
     id: int
+    product_variant_id: int
     product_name: str
     image_url: str
     color: str
